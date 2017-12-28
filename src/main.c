@@ -23,11 +23,12 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "config.h"
+
 //==============================================================================
 // Defines
 //==============================================================================
 
-#define JDEDIT_VERSION "0.0.1"
 #define JDEDIT_TAB_STOP 4
 
 #define CTRL_KEY(k) ((k) & 0x1f)
@@ -1444,7 +1445,7 @@ void editorDrawRows(struct abuf *ab)
                 char welcome[80];
 
                 int welcomelen = snprintf(welcome, sizeof(welcome),
-                                          "JDEDIT editor -- version %s", JDEDIT_VERSION);
+                                          "JDEDIT editor -- version %s", PACKAGE_VERSION);
                 if(welcomelen > E.screenCols)
                 {
                     welcomelen = E.screenCols;
