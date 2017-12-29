@@ -10,4 +10,11 @@ src/terminal.c \
 src/append_buffer.c \
 src/syntax.c \
 src/row.c \
-src/editor.c
+src/editor.c \
+\
+src/terminal.h \
+src/append_buffer.h \
+src/syntax.h \
+src/key.h \
+src/row.h \
+src/editor.h

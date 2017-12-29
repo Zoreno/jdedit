@@ -103,6 +103,8 @@ void editorInsertChar(struct editorConfig *conf, int c)
 
 void editorInsertNewline(struct editorConfig *conf)
 {
+    int leadingTabs = 0;
+
     if(conf->activeBuffer->cx == 0)
     {
         editorInsertRow(conf, conf->activeBuffer->cy, "", 0);
@@ -116,10 +118,27 @@ void editorInsertNewline(struct editorConfig *conf)
         row->size = conf->activeBuffer->cx;
         row->chars[row->size] = '\0';
         editorUpdateRow(conf, row);
+
+        for(int i = 0; i < row->size; ++i)
+        {
+            if(row->chars[i] == '\t')
+            {
+                ++leadingTabs;
+            }
+            else
+            {
+                break;
+            }
+        }
     }
 
     conf->activeBuffer->cy++;
     conf->activeBuffer->cx = 0;
+
+    for(int i = 0; i < leadingTabs; ++i)
+    {
+        editorInsertChar(conf, '\t');
+    }
 }
 
 void editorDelChar(struct editorConfig *conf)
@@ -186,7 +205,7 @@ void editorDestroyBuffer(struct editorConfig *conf, int idx)
     freeBuffer(buffer);
 
     free(buffer);
-    
+
     if(conf->numBuffers == 1)
     {
         free(conf->buffers);
