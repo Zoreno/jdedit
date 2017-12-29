@@ -75,7 +75,8 @@ struct editorConfig E;
 void editorSetStatusMessage(const char *fmt, ...);
 void editorRefreshScreen();
 char *editorPrompt(char *prompt, void (*callback)(char *, int));
-void editorClose();
+int editorClose();
+void editorSave();
 
 //==============================================================================
 // Exit
@@ -140,8 +141,6 @@ void editorOpen(char *filename)
         }
     }
 
-    editorClose();
-
     E.activeBuffer->filename = strdup(filename);
 
     editorSelectSyntaxHighlight(&E);
@@ -184,31 +183,40 @@ void editorOpen(char *filename)
     editorSetStatusMessage("Opened File: %.20s - %d bytes read", filename, bytes_read);
 }
 
-void editorClose()
+int editorClose()
 {
-    E.activeBuffer->cx = 0;
-    E.activeBuffer->cy = 0;
-    E.activeBuffer->rx = 0;
-    E.activeBuffer->rowoff = 0;
-    E.activeBuffer->coloff = 0;
-
-    while(E.activeBuffer->numrows)
+    while(E.numBuffers)
     {
-        editorDelRow(&E, E.activeBuffer->numrows - 1);
+        editorLastBuffer(&E, NULL);
+
+        struct buffer *buffer = E.activeBuffer;
+        
+        if(buffer->dirty)
+        {
+            char buf[80];
+
+            int len = snprintf(buf, sizeof(buf),
+                               "Warning! %s contains unsaved changes. Exit anyway? y/n: %%s",
+                               buffer->filename ? buffer->filename : "[no name]");
+            
+            char *response = editorPrompt(buf, NULL);
+
+            if(!(strcmp(response, "y") == 0 || strcmp(response, "Y") == 0))
+            {
+                if(response)
+                {
+                    free(response);
+                }
+                return 1;
+            }
+
+            free(response);
+        }
+        
+        editorDestroyBuffer(&E, E.numBuffers - 1);
     }
 
-    free(E.activeBuffer->row);
-
-    E.activeBuffer->row = NULL;
-    E.activeBuffer->dirty = 0;
-
-    free(E.activeBuffer->filename);
-    E.activeBuffer->filename = NULL;
-
-    E.statusmsg[0] = '\0';
-    E.statusmsg_time = 0;
-
-    E.activeBuffer->syntax = NULL;
+    return 0;
 }
 
 void editorSave()
@@ -486,25 +494,15 @@ void editorProcessKeypress()
         editorInsertNewline(&E);
         break;
     case CTRL_KEY('q'):
-        if(E.activeBuffer->dirty)
+
+        if(editorClose())
         {
-            char *response = editorPrompt("Warning! Unsaved changes. Exit anyway? y/n: %s",
-                                          NULL);
-
-            if(!(strcmp(response, "y") == 0 || strcmp(response, "Y") == 0))
-            {
-                if(response)
-                {
-                    free(response);
-                }
-                return;
-            }
-
-            free(response);
+            return;
         }
+        
         terminalWrite("\x1b[2J", 4);
         terminalWrite("\x1b[H", 3);
-
+        
         terminalDisableRawMode(&E);
 
         exit(0);
@@ -520,7 +518,9 @@ void editorProcessKeypress()
 
         if(filename)
         {
-            editorCreateBuffer(&E, &E.activeBuffer);
+            editorCreateBuffer(&E, NULL);
+            // TODO: Switch by name
+            editorLastBuffer(&E, NULL);
             editorOpen(filename);
 
             free(filename);
@@ -579,13 +579,20 @@ void editorProcessKeypress()
         }
     }
     break;
-
+    case CTRL_KEY('k'):
+        editorDestroyBuffer(&E, E.curBuffer);
+        break;
     case CTRL_KEY('r'):
         editorPrevBuffer(&E, NULL);
         break;
     case CTRL_KEY('t'):
         editorNextBuffer(&E, NULL);
         break;
+    case CTRL_KEY('d'):
+        editorFirstBuffer(&E, NULL);
+        break;
+    case CTRL_KEY('g'):
+        editorLastBuffer(&E, NULL);
     case CTRL_KEY('p'):
         editorMoveCursor(ARROW_UP);
         break;
@@ -611,7 +618,7 @@ void editorProcessKeypress()
         break;
 
     case CTRL_KEY('i'):
-        editorInsertChar('\t');
+        editorInsertChar(&E, '\t');
         break;
 
     default:
@@ -919,6 +926,9 @@ void editorSetStatusMessage(const char *fmt, ...)
 
 void initEditor()
 {
+    // Make sure buffers is malloc'ed, otherwise realloc fails
+    E.buffers = malloc(sizeof(struct buffer*));
+
     editorCreateBuffer(&E, NULL);
 
     E.curBuffer = 0;
@@ -948,6 +958,11 @@ int main(int argc, char **argv)
 
     while(1)
     {
+        if(E.numBuffers == 0)
+        {
+            editorCreateBuffer(&E, NULL);
+        }
+
         editorRefreshScreen();
         editorProcessKeypress();
     }

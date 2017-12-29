@@ -23,6 +23,7 @@ struct buffer
     int dirty;
     char *filename;
     struct editorSyntax *syntax;
+    struct editorConfig *conf;
 };
 
 struct editorConfig
@@ -52,6 +53,7 @@ void editorInsertNewline(struct editorConfig *conf);
 void editorDelChar(struct editorConfig *conf);
 
 void editorCreateBuffer(struct editorConfig *conf, struct buffer **buf_ptr);
+void editorDestroyBuffer(struct editorConfig *conf, int idx);
 
 /*
 void editorSwitchBufferByName(struct editorConfig *conf,
@@ -60,11 +62,8 @@ void editorSwitchBufferByName(struct editorConfig *conf,
 */
 
 void editorNextBuffer(struct editorConfig *conf, struct buffer **buf_ptr);
-
 void editorPrevBuffer(struct editorConfig *conf, struct buffer **buf_ptr);
-
 void editorFirstBuffer(struct editorConfig *conf, struct buffer **buf_ptr);
-
 void editorLastBuffer(struct editorConfig *conf, struct buffer **buf_ptr);
 
 

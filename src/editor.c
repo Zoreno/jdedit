@@ -25,6 +25,8 @@
 
 #define JDEDIT_TAB_STOP 4
 
+extern void die(const char *s);
+
 void editorInsertRow(struct editorConfig *conf, int at, char *s, size_t len)
 {
     if(at < 0 || at > conf->activeBuffer->numrows)
@@ -159,6 +161,8 @@ void editorCreateBuffer(struct editorConfig *conf, struct buffer **buf_ptr)
     {
         initBuffer(new);
 
+        new->conf = conf;
+
         conf->buffers[conf->numBuffers] = new;
 
         conf->numBuffers++;
@@ -168,6 +172,54 @@ void editorCreateBuffer(struct editorConfig *conf, struct buffer **buf_ptr)
             *buf_ptr = new;
         }
     }
+}
+
+void editorDestroyBuffer(struct editorConfig *conf, int idx)
+{
+    if(idx < 0 || idx >= conf->numBuffers)
+    {
+        return;
+    }
+
+    struct buffer *buffer = conf->buffers[idx];
+
+    freeBuffer(buffer);
+
+    free(buffer);
+    
+    if(conf->numBuffers == 1)
+    {
+        free(conf->buffers);
+        conf->buffers = NULL;
+    }
+    else
+    {
+        if(idx != (conf->numBuffers - 1))
+        {
+            memmove(&conf->buffers[idx],
+                    &conf->buffers[idx + 1],
+                    sizeof(struct buffer *) * (conf->numBuffers - idx - 1));
+        }
+
+        struct buffer **new = realloc(conf->buffers,
+                                      sizeof(struct buffer *) * (conf->numBuffers - 1));
+
+        if(!new)
+        {
+            die("realloc");
+        }
+
+        conf->buffers = new;
+
+        if((conf->curBuffer > idx) || (idx == conf->numBuffers - 1))
+        {
+            conf->curBuffer--;
+        }
+
+        conf->activeBuffer = conf->buffers[conf->curBuffer];
+    }
+
+    conf->numBuffers--;
 }
 
 void editorNextBuffer(struct editorConfig *conf, struct buffer **buf_ptr)
@@ -183,7 +235,7 @@ void editorNextBuffer(struct editorConfig *conf, struct buffer **buf_ptr)
 
     if(buf_ptr)
     {
-        *buf_ptr = conf->activeBuffer;;
+        *buf_ptr = conf->activeBuffer;
     }
 }
 
@@ -191,7 +243,7 @@ void editorPrevBuffer(struct editorConfig *conf, struct buffer **buf_ptr)
 {
     if(conf->curBuffer == 0)
     {
-        conf->curBuffer = conf->numBuffers;;
+        conf->curBuffer = conf->numBuffers;
     }
 
     --conf->curBuffer;
@@ -200,7 +252,7 @@ void editorPrevBuffer(struct editorConfig *conf, struct buffer **buf_ptr)
 
     if(buf_ptr)
     {
-        *buf_ptr = conf->activeBuffer;;
+        *buf_ptr = conf->activeBuffer;
     }
 }
 
@@ -212,7 +264,7 @@ void editorFirstBuffer(struct editorConfig *conf, struct buffer **buf_ptr)
 
     if(buf_ptr)
     {
-        *buf_ptr = conf->activeBuffer;;
+        *buf_ptr = conf->activeBuffer;
     }
 }
 
@@ -224,7 +276,7 @@ void editorLastBuffer(struct editorConfig *conf, struct buffer **buf_ptr)
 
     if(buf_ptr)
     {
-        *buf_ptr = conf->activeBuffer;;
+        *buf_ptr = conf->activeBuffer;
     }
 }
 
@@ -251,5 +303,12 @@ void initBuffer(struct buffer *buffer)
 
 void freeBuffer(struct buffer *buffer)
 {
-    // TODO: Fix
+    while(buffer->numrows)
+    {
+        editorDelRow(buffer->conf, buffer->numrows - 1);
+    }
+
+    free(buffer->row);
+
+    free(buffer->filename);
 }
