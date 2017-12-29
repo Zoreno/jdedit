@@ -55,17 +55,17 @@ void editorUpdateSyntax(struct editorConfig *conf, erow *row)
     row->hl = realloc(row->hl, row->rsize);
     memset(row->hl, HL_NORMAL, row->rsize);
 
-    if(conf->syntax == NULL)
+    if(conf->activeBuffer->syntax == NULL)
     {
         return;
     }
 
-    char **keywords = conf->syntax->keywords;
+    char **keywords = conf->activeBuffer->syntax->keywords;
 
-    char *scs = conf->syntax->singleline_comment_start;
+    char *scs = conf->activeBuffer->syntax->singleline_comment_start;
 
-    char *mcs = conf->syntax->multiline_comment_start;
-    char *mce = conf->syntax->multiline_comment_end;
+    char *mcs = conf->activeBuffer->syntax->multiline_comment_start;
+    char *mce = conf->activeBuffer->syntax->multiline_comment_end;
 
     int scs_len = scs ? strlen(scs) : 0;
     int mcs_len = mcs ? strlen(mcs) : 0;
@@ -73,7 +73,7 @@ void editorUpdateSyntax(struct editorConfig *conf, erow *row)
 
     int prev_sep = 1;
     int in_string = 0;
-    int in_comment = (row->idx > 0 && conf->row[row->idx - 1].hl_open_comment);
+    int in_comment = (row->idx > 0 && conf->activeBuffer->row[row->idx - 1].hl_open_comment);
 
     int i = 0;
 
@@ -120,7 +120,7 @@ void editorUpdateSyntax(struct editorConfig *conf, erow *row)
             }
         }
 
-        if(conf->syntax->flags & HL_HIGHLIGHT_STRINGS)
+        if(conf->activeBuffer->syntax->flags & HL_HIGHLIGHT_STRINGS)
         {
             if(in_string)
             {
@@ -158,7 +158,7 @@ void editorUpdateSyntax(struct editorConfig *conf, erow *row)
             }
         }
 
-        if(conf->syntax->flags & HL_HIGHLIGHT_NUMBERS)
+        if(conf->activeBuffer->syntax->flags & HL_HIGHLIGHT_NUMBERS)
         {
             if((isdigit(c) && (prev_sep || prev_hl == HL_NUMBER)) ||
                (c == '.' && prev_hl == HL_NUMBER))
@@ -209,9 +209,9 @@ void editorUpdateSyntax(struct editorConfig *conf, erow *row)
 
     row->hl_open_comment = in_comment;
 
-    if(changed && row->idx + 1 < conf->numrows)
+    if(changed && row->idx + 1 < conf->activeBuffer->numrows)
     {
-        editorUpdateSyntax(conf, &conf->row[row->idx + 1]);
+        editorUpdateSyntax(conf, &conf->activeBuffer->row[row->idx + 1]);
     }
 }
 
@@ -239,14 +239,14 @@ int editorSyntaxToColor(int hl)
 
 void editorSelectSyntaxHighlight(struct editorConfig *conf)
 {
-    conf->syntax = NULL;
+    conf->activeBuffer->syntax = NULL;
 
-    if(conf->filename == NULL)
+    if(conf->activeBuffer->filename == NULL)
     {
         return;
     }
 
-    char *ext = strrchr(conf->filename, '.');
+    char *ext = strrchr(conf->activeBuffer->filename, '.');
 
     for(unsigned int j = 0; j < HLDB_ENTRIES; ++j)
     {
@@ -259,15 +259,15 @@ void editorSelectSyntaxHighlight(struct editorConfig *conf)
             int is_ext = (s->filematch[i][0] == '.');
 
             if((is_ext && ext && !strcmp(ext, s->filematch[i])) ||
-               (!is_ext && strstr(conf->filename, s->filematch[i])))
+               (!is_ext && strstr(conf->activeBuffer->filename, s->filematch[i])))
             {
-                conf->syntax = s;
+                conf->activeBuffer->syntax = s;
 
                 int filerow;
 
-                for(filerow = 0; filerow < conf->numrows; ++filerow)
+                for(filerow = 0; filerow < conf->activeBuffer->numrows; ++filerow)
                 {
-                    editorUpdateSyntax(conf, &conf->row[filerow]);
+                    editorUpdateSyntax(conf, &conf->activeBuffer->row[filerow]);
                 }
 
                 return;

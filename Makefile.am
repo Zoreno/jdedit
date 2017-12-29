@@ -4,4 +4,10 @@ EXTRA_DIST = m4/NOTES
 
 bin_PROGRAMS = jdedit
 
-jdedit_SOURCES = src/main.c src/terminal.c src/append_buffer.c src/syntax.c
+jdedit_SOURCES = \
+src/main.c \
+src/terminal.c \
+src/append_buffer.c \
+src/syntax.c \
+src/row.c \
+src/editor.c
