@@ -25,3 +25,5 @@ jdedit
 stamp-h1
 
 valdump
+
+build/**

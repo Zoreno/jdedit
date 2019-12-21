@@ -13,8 +13,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "../config.h"
-
 #include "row.h"
 #include "syntax.h"
 #include "editor.h"
@@ -29,7 +27,7 @@ extern void die(const char *s);
 
 void editorInsertRow(struct editorConfig *conf, int at, char *s, size_t len)
 {
-    if(at < 0 || at > conf->activeBuffer->numrows)
+    if (at < 0 || at > conf->activeBuffer->numrows)
     {
         return;
     }
@@ -37,13 +35,12 @@ void editorInsertRow(struct editorConfig *conf, int at, char *s, size_t len)
     conf->activeBuffer->row = realloc(conf->activeBuffer->row,
                                       sizeof(erow) * (conf->activeBuffer->numrows + 1));
     memmove(&conf->activeBuffer->row[at + 1], &conf->activeBuffer->row[at],
-            sizeof(erow)*(conf->activeBuffer->numrows - at));
+            sizeof(erow) * (conf->activeBuffer->numrows - at));
 
-    for(int j = at + 1; j <= conf->activeBuffer->numrows; ++j)
+    for (int j = at + 1; j <= conf->activeBuffer->numrows; ++j)
     {
         conf->activeBuffer->row[j].idx++;
     }
-
 
     conf->activeBuffer->row[at].idx = at;
 
@@ -65,10 +62,9 @@ void editorInsertRow(struct editorConfig *conf, int at, char *s, size_t len)
     conf->activeBuffer->dirty++;
 }
 
-
 void editorDelRow(struct editorConfig *conf, int at)
 {
-    if(at < 0 || at >= conf->activeBuffer->numrows)
+    if (at < 0 || at >= conf->activeBuffer->numrows)
     {
         return;
     }
@@ -79,7 +75,7 @@ void editorDelRow(struct editorConfig *conf, int at)
             &conf->activeBuffer->row[at + 1],
             sizeof(erow) * (conf->activeBuffer->numrows - at - 1));
 
-    for(int j = at; j < conf->activeBuffer->numrows - 1; ++j)
+    for (int j = at; j < conf->activeBuffer->numrows - 1; ++j)
     {
         conf->activeBuffer->row[j].idx--;
     }
@@ -90,7 +86,7 @@ void editorDelRow(struct editorConfig *conf, int at)
 
 void editorInsertChar(struct editorConfig *conf, int c)
 {
-    if(conf->activeBuffer->cy == conf->activeBuffer->numrows)
+    if (conf->activeBuffer->cy == conf->activeBuffer->numrows)
     {
         editorInsertRow(conf, conf->activeBuffer->numrows, "", 0);
     }
@@ -105,7 +101,7 @@ void editorInsertNewline(struct editorConfig *conf)
 {
     int leadingTabs = 0;
 
-    if(conf->activeBuffer->cx == 0)
+    if (conf->activeBuffer->cx == 0)
     {
         editorInsertRow(conf, conf->activeBuffer->cy, "", 0);
     }
@@ -119,9 +115,9 @@ void editorInsertNewline(struct editorConfig *conf)
         row->chars[row->size] = '\0';
         editorUpdateRow(conf, row);
 
-        for(int i = 0; i < row->size; ++i)
+        for (int i = 0; i < row->size; ++i)
         {
-            if(row->chars[i] == '\t')
+            if (row->chars[i] == '\t')
             {
                 ++leadingTabs;
             }
@@ -135,7 +131,7 @@ void editorInsertNewline(struct editorConfig *conf)
     conf->activeBuffer->cy++;
     conf->activeBuffer->cx = 0;
 
-    for(int i = 0; i < leadingTabs; ++i)
+    for (int i = 0; i < leadingTabs; ++i)
     {
         editorInsertChar(conf, '\t');
     }
@@ -143,19 +139,19 @@ void editorInsertNewline(struct editorConfig *conf)
 
 void editorDelChar(struct editorConfig *conf)
 {
-    if(conf->activeBuffer->cy == conf->activeBuffer->numrows)
+    if (conf->activeBuffer->cy == conf->activeBuffer->numrows)
     {
         return;
     }
 
-    if(conf->activeBuffer->cx == 0 && conf->activeBuffer->cy == 0)
+    if (conf->activeBuffer->cx == 0 && conf->activeBuffer->cy == 0)
     {
         return;
     }
 
     erow *row = &conf->activeBuffer->row[conf->activeBuffer->cy];
 
-    if(conf->activeBuffer->cx > 0)
+    if (conf->activeBuffer->cx > 0)
     {
         editorRowDelChar(conf, row, conf->activeBuffer->cx - 1);
         conf->activeBuffer->cx--;
@@ -176,7 +172,7 @@ void editorCreateBuffer(struct editorConfig *conf, struct buffer **buf_ptr)
 
     struct buffer *new = malloc(sizeof(struct buffer));
 
-    if(new)
+    if (new)
     {
         initBuffer(new);
 
@@ -186,7 +182,7 @@ void editorCreateBuffer(struct editorConfig *conf, struct buffer **buf_ptr)
 
         conf->numBuffers++;
 
-        if(buf_ptr)
+        if (buf_ptr)
         {
             *buf_ptr = new;
         }
@@ -195,7 +191,7 @@ void editorCreateBuffer(struct editorConfig *conf, struct buffer **buf_ptr)
 
 void editorDestroyBuffer(struct editorConfig *conf, int idx)
 {
-    if(idx < 0 || idx >= conf->numBuffers)
+    if (idx < 0 || idx >= conf->numBuffers)
     {
         return;
     }
@@ -206,14 +202,14 @@ void editorDestroyBuffer(struct editorConfig *conf, int idx)
 
     free(buffer);
 
-    if(conf->numBuffers == 1)
+    if (conf->numBuffers == 1)
     {
         free(conf->buffers);
         conf->buffers = NULL;
     }
     else
     {
-        if(idx != (conf->numBuffers - 1))
+        if (idx != (conf->numBuffers - 1))
         {
             memmove(&conf->buffers[idx],
                     &conf->buffers[idx + 1],
@@ -223,14 +219,14 @@ void editorDestroyBuffer(struct editorConfig *conf, int idx)
         struct buffer **new = realloc(conf->buffers,
                                       sizeof(struct buffer *) * (conf->numBuffers - 1));
 
-        if(!new)
+        if (!new)
         {
             die("realloc");
         }
 
         conf->buffers = new;
 
-        if((conf->curBuffer > idx) || (idx == conf->numBuffers - 1))
+        if ((conf->curBuffer > idx) || (idx == conf->numBuffers - 1))
         {
             conf->curBuffer--;
         }
@@ -245,14 +241,14 @@ void editorNextBuffer(struct editorConfig *conf, struct buffer **buf_ptr)
 {
     ++conf->curBuffer;
 
-    if(conf->curBuffer == conf->numBuffers)
+    if (conf->curBuffer == conf->numBuffers)
     {
         conf->curBuffer = 0;
     }
 
     conf->activeBuffer = conf->buffers[conf->curBuffer];
 
-    if(buf_ptr)
+    if (buf_ptr)
     {
         *buf_ptr = conf->activeBuffer;
     }
@@ -260,7 +256,7 @@ void editorNextBuffer(struct editorConfig *conf, struct buffer **buf_ptr)
 
 void editorPrevBuffer(struct editorConfig *conf, struct buffer **buf_ptr)
 {
-    if(conf->curBuffer == 0)
+    if (conf->curBuffer == 0)
     {
         conf->curBuffer = conf->numBuffers;
     }
@@ -269,7 +265,7 @@ void editorPrevBuffer(struct editorConfig *conf, struct buffer **buf_ptr)
 
     conf->activeBuffer = conf->buffers[conf->curBuffer];
 
-    if(buf_ptr)
+    if (buf_ptr)
     {
         *buf_ptr = conf->activeBuffer;
     }
@@ -281,7 +277,7 @@ void editorFirstBuffer(struct editorConfig *conf, struct buffer **buf_ptr)
 
     conf->activeBuffer = conf->buffers[0];
 
-    if(buf_ptr)
+    if (buf_ptr)
     {
         *buf_ptr = conf->activeBuffer;
     }
@@ -293,12 +289,11 @@ void editorLastBuffer(struct editorConfig *conf, struct buffer **buf_ptr)
 
     conf->activeBuffer = conf->buffers[conf->numBuffers - 1];
 
-    if(buf_ptr)
+    if (buf_ptr)
     {
         *buf_ptr = conf->activeBuffer;
     }
 }
-
 
 void initBuffer(struct buffer *buffer)
 {
@@ -322,7 +317,7 @@ void initBuffer(struct buffer *buffer)
 
 void freeBuffer(struct buffer *buffer)
 {
-    while(buffer->numrows)
+    while (buffer->numrows)
     {
         editorDelRow(buffer->conf, buffer->numrows - 1);
     }
