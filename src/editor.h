@@ -1,73 +1,110 @@
+/**
+ * @file editor.h
+ * @author Joakim Bertils
+ * @version 0.1
+ * @date 2021-04-18
+ *
+ * @brief Editor interface.
+ *
+ * @copyright Copyright (C) 2021, Joakim Bertils
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https: //www.gnu.org/licenses/>.
+ *
+ */
+
 #ifndef _EDITOR_H
 #define _EDITOR_H
 
-#include "syntax.h"
 #include "row.h"
+#include "syntax.h"
 
-#include <time.h>
 #include <termios.h>
+#include <time.h>
+
+#define JDEDIT_TAB_STOP 4
 
 struct editorConfig;
 
-struct buffer
-{
-    int cx;
-    int cy;
-    int rx;
-    int rowoff;
-    int coloff;
-    int linum_width;
-    int linum_mode;
-    int numrows;
-    erow *row;
-    int dirty;
-    char *filename;
-    struct editorSyntax *syntax;
-    struct editorConfig *conf;
-};
+typedef struct buffer {
+  int cx;
+  int cy;
+  int rx;
+  int rowoff;
+  int coloff;
+  int linum_width;
+  int linum_mode;
+  int numrows;
+  erow *row;
+  int dirty;
+  char *filename;
+  struct editorSyntax *syntax;
+  struct editorConfig *conf;
+} buffer_t;
 
-struct editorConfig
-{
-    struct buffer *activeBuffer;
+typedef struct editorConfig {
+  buffer_t *activeBuffer;
 
-    struct buffer **buffers;
-    int numBuffers;
+  buffer_t **buffers;
+  int numBuffers;
 
-    int curBuffer;
-    
-    int windowRows;
-    int windowCols;
+  int curBuffer;
 
-    int screenRows;
-    int screenCols;
+  int windowRows;
+  int windowCols;
 
-    char statusmsg[80];
-    time_t statusmsg_time;
-    struct termios orig_termios;
-};
+  int screenRows;
+  int screenCols;
 
-void editorInsertRow(struct editorConfig *conf, int at, char *s, size_t len);
-void editorDelRow(struct editorConfig *conf, int at);
-void editorInsertChar(struct editorConfig *conf, int c);
-void editorInsertNewline(struct editorConfig *conf);
-void editorDelChar(struct editorConfig *conf);
+  char statusmsg[80];
+  time_t statusmsg_time;
+  struct termios orig_termios;
+} editorConfig_t;
 
-void editorCreateBuffer(struct editorConfig *conf, struct buffer **buf_ptr);
-void editorDestroyBuffer(struct editorConfig *conf, int idx);
+void editorInsertRow(editorConfig_t *conf, int at, char *s, size_t len);
+void editorDelRow(editorConfig_t *conf, int at);
+void editorInsertChar(editorConfig_t *conf, int c);
+void editorInsertNewline(editorConfig_t *conf);
+void editorDelChar(editorConfig_t *conf);
+
+void editorCreateBuffer(editorConfig_t *conf, buffer_t **buf_ptr);
+void editorDestroyBuffer(editorConfig_t *conf, int idx);
 
 /*
-void editorSwitchBufferByName(struct editorConfig *conf,
+void editorSwitchBufferByName(editorConfig_t *conf,
                               const char *name,
-                              struct buffer **buf_ptr);
+                              buffer_t **buf_ptr);
 */
 
-void editorNextBuffer(struct editorConfig *conf, struct buffer **buf_ptr);
-void editorPrevBuffer(struct editorConfig *conf, struct buffer **buf_ptr);
-void editorFirstBuffer(struct editorConfig *conf, struct buffer **buf_ptr);
-void editorLastBuffer(struct editorConfig *conf, struct buffer **buf_ptr);
+void editorNextBuffer(editorConfig_t *conf, buffer_t **buf_ptr);
+void editorPrevBuffer(editorConfig_t *conf, buffer_t **buf_ptr);
+void editorFirstBuffer(editorConfig_t *conf, buffer_t **buf_ptr);
+void editorLastBuffer(editorConfig_t *conf, buffer_t **buf_ptr);
 
+void initBuffer(buffer_t *buffer);
+void freeBuffer(buffer_t *buffer);
 
-void initBuffer(struct buffer *buffer);
-void freeBuffer(struct buffer *buffer);
+char *editorRowsToString(int *buflen);
+void editorOpen(char *filename);
+int editorClose();
+void editorSave();
+void editorFindCallback(char *query, int key);
+void editorFind();
+char *editorPrompt(char *prompt, void (*callback)(char *, int));
+void editorMoveCursor(int key);
+void editorProcessKeypress();
+void editorScroll();
+void editorRefreshScreen();
+void editorSetStatusMessage(const char *fmt, ...);
+void editorInit();
 
 #endif
